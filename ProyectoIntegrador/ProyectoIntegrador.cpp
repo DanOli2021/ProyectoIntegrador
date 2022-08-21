@@ -322,7 +322,7 @@ string BusquedaDeEstudiante()
 	
 	cout << "Resultado: \n" << result << "\n";
 
-	cout << "Savar resultados 1 = Si, 2 = No: ";
+	cout << "Salvar resultados 1 = Si, 2 = No: ";
 	string salvar = getUserInput();
 
 	if (salvar != "1")
@@ -415,7 +415,7 @@ int main()
 			}
 			else 
 			{
-				cout << "Datos de Estudiante modificados\n";
+				//cout << "Datos de Estudiante modificados\n";
 			}
 		}
 
