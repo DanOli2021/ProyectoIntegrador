@@ -84,6 +84,7 @@ string dbResultToJson(char** dbResult, int nrows, int ncols)
 	return json;
 }
 
+
 // Creamos una función para manejar los datos de la base de datos por medio solo de SQL
 // Solo permite ejecutar sentencias INSERT, UPDATE, DELETE
 string SQliteExecute(string SQL) 
@@ -138,24 +139,70 @@ string SQliteQuery(string SQL)
 }
 
 
+// Estructura estudiante
+struct estudiante
+{
+	string apellido_paterno = "";
+	string apellido_materno = "";
+	string nombre = "";
+	string carrera = "";
+	string matricula = "";
+	int edad = 0;
+	string correo = "";
+	string telefono = "";
+};
+
+
+// Arreglo de estudiantes
+estudiante estudiantes[1024];
+int estudiante_index = 0;
 
 // Esta función inserta los datos del estudiante
-string insertarEstudiante(string apellido_paterno, string apellido_materno, string nombre, int edad, string matricula, string carrera, string correo, string telefono)
+// Usamos como parametro la estructura estudiante
+string insertarEstudiante(estudiante e)
 {
-	return SQliteExecute("INSERT INTO estudiantes (apellido_paterno, apellido_materno, nombre, edad, matricula, carrera, correo, telefono) VALUES ('" + apellido_paterno + "', '" + apellido_materno + "', '" + nombre + "', " + to_string(edad) + ",'" + matricula + "', '" + carrera + "', '" + correo + "', '" + telefono + "')");
+	string result = SQliteExecute("INSERT INTO estudiantes (apellido_paterno, apellido_materno, nombre, edad, matricula, carrera, correo, telefono) VALUES ('" + 
+		e.apellido_paterno + "', '" + 
+		e.apellido_materno + "', '" + 
+		e.nombre + "', " + 
+		to_string(e.edad) + ",'" + 
+		e.matricula + "', '" + 
+		e.carrera + "', '" + 
+		e.correo + "', '" + 
+		e.telefono + "')");
+
+	if (result == "Ok.")
+	{
+		estudiantes[estudiante_index] = e;
+		++estudiante_index;
+	}
+	
+	return result;
+	
 }
 
 // Esta función actualiza los datos del estudiante
-string actualizarEstudiante(string apellido_paterno, string apellido_materno, string nombre, int edad, string matricula, string carrera, string correo, string telefono)
+// Usamos como parametro la estructura estudiante
+string actualizarEstudiante(estudiante e)
 {
-	return SQliteExecute("UPDATE estudiantes SET apellido_paterno = '" + apellido_paterno + "', "
-		                                          + "apellido_materno = '" + apellido_materno + "', "
-		                                          + "nombre = '" + nombre + "', " 
-		                                          + "edad = " + to_string(edad) + ", " 
-		                                          + "carrera = '" + carrera + "', " 
-		                                          + "correo = '" + correo + "', " 
-		                                          + "telefono = '" + telefono + "' "
-		                                          + "WHERE matricula = '" + matricula + "'");
+	return SQliteExecute("UPDATE estudiantes SET apellido_paterno = '" + e.apellido_paterno + "', "
+		                                          + "apellido_materno = '" + e.apellido_materno + "', "
+		                                          + "nombre = '" + e.nombre + "', " 
+		                                          + "edad = " + to_string(e.edad) + ", " 
+		                                          + "carrera = '" + e.carrera + "', " 
+		                                          + "correo = '" + e.correo + "', " 
+		                                          + "telefono = '" + e.telefono + "' "
+		                                          + "WHERE matricula = '" + e.matricula + "'");
+
+	//Buscamos la matricula a actualizar en el arreglo de estudiantes
+	for (int i = 0; i < estudiante_index; i++)
+	{
+		if (estudiantes[i].matricula == e.matricula)
+		{
+			estudiantes[i] = e;
+			break;
+		}
+	}
 	
 }
 
@@ -164,33 +211,27 @@ string actualizarEstudiante(string apellido_paterno, string apellido_materno, st
 // Esta función solicita los datos al usuario 
 string CapturarEstudianteYLoInserta() 
 {
-	string apellido_paterno;
-	string apellido_materno;
-	string nombre;
-	int edad;
-	string matricula;
-	string correo;
-	string telefono;
-	string carrera;
+
+	estudiante e = estudiante();	
 	
 	cout << "Ingrese el nombre del estudiante: ";
-	nombre = getUserInput();
+	e.nombre = getUserInput();
 	cout << "Ingrese el apellido paterno: ";
-	apellido_paterno = getUserInput();
+	e.apellido_paterno = getUserInput();
 	cout << "Ingrese el apellido materno: ";
-	apellido_materno = getUserInput();
+	e.apellido_materno = getUserInput();
 	cout << "Ingrese la edad: ";
-	edad = stoi(getUserInput());
+	e.edad = stoi(getUserInput());
 	cout << "Ingrese la matricula: ";
-	matricula = getUserInput();
+	e.matricula = getUserInput();
 	cout << "Ingrese el correo electrónico: ";
-	correo = getUserInput();
+	e.correo = getUserInput();
 	cout << "Ingrese el télefono: ";
-	telefono = getUserInput();
+	e.telefono = getUserInput();
 	cout << "Ingrese la carrera: ";
-	carrera = getUserInput();
+	e.carrera = getUserInput();
 
-	string result = insertarEstudiante(apellido_paterno , apellido_materno, nombre, edad, matricula, carrera, correo, telefono);
+	string result = insertarEstudiante(e);
 	return result;
 }
 
@@ -200,23 +241,15 @@ string CapturarEstudianteYLoInserta()
 string ModificacionDeEstudiante()
 {
 	//La matrícula buscada no existe\n
-
+	estudiante e = estudiante();
+	
 	cout << "Ingrese la matrícula a modificar:";
-	string matricula = getUserInput();
-
-	string apellido_paterno;
-	string apellido_materno;
-	string nombre;
-	int edad;
-	string carrera;
-	string correo;
-	string telefono;
-
-	string result = SQliteQuery("SELECT * FROM estudiantes WHERE matricula = '" + matricula + "'");
+	e.matricula = getUserInput();
+	string result = SQliteQuery("SELECT * FROM estudiantes WHERE matricula = '" + e.matricula + "'");
 
 	if (result == "[]")
 	{
-		cout << "La matrícula buscada no existe: " << matricula << endl;
+		cout << "La matrícula buscada no existe: " << e.matricula << endl;
 		return "Ok.";
 	}
 
@@ -234,21 +267,21 @@ string ModificacionDeEstudiante()
 	//nombre = j[0]["nombre"];	
 
 	cout << "Ingrese el nombre del estudiante:";
-	nombre = getUserInput();
+	e.nombre = getUserInput();
 	cout << "Ingrese el apellido paterno:";
-	apellido_paterno = getUserInput();
+	e.apellido_paterno = getUserInput();
 	cout << "Ingrese el apellido materno:";
-	apellido_materno = getUserInput();
+	e.apellido_materno = getUserInput();
 	cout << "Ingrese la edad:";
-	edad = stoi(getUserInput());
+	e.edad = stoi(getUserInput());
 	cout << "Ingrese el correo electrónico:";
-	correo = getUserInput();
+	e.correo = getUserInput();
 	cout << "Ingrese el télefono:";
-	telefono = getUserInput();
+	e.telefono = getUserInput();
 	cout << "Ingrese la carrera:";
-	carrera = getUserInput();
+	e.carrera = getUserInput();
 
-	return actualizarEstudiante( apellido_materno, apellido_paterno, nombre, edad, matricula, carrera, correo, telefono);
+	return actualizarEstudiante( e );
 }
 
 
@@ -285,6 +318,16 @@ string BajaDeEstudiante()
 			cout << "Error: " + result;
 			return "Error: " + result;
 		}
+
+		//Buscamos al estudiante y lo eliminamos 
+		for (int i = 0; i < estudiante_index; i++)
+		{
+			if (estudiantes[i].matricula == matricula)
+			{
+				estudiantes[i] = estudiante();
+				break;
+			}
+		}
 		
 		cout << "El estudiante ha sido eliminado:" << matricula << endl << "\n";
 		return "Ok.";
@@ -320,6 +363,7 @@ string BusquedaDeEstudiante()
 		return "Ok.";
 	}
 	
+	//Buscamos al estudiante y lo eliminamos	
 	cout << "Resultado: \n" << result << "\n";
 
 	cout << "Salvar resultados 1 = Si, 2 = No: ";
@@ -341,6 +385,56 @@ string BusquedaDeEstudiante()
 }
 
 
+// Buscamos dentro de lo que hemos capturado en la sessión
+string busquedaEnLoCapturado(){
+	// Buscamos los elementos dentro del arreglo es estudiantes
+
+	cout << "Buscar (* --> todos): ";
+	string busqueda = getUserInput();
+
+	int encontrados = 0;
+	int todos = 0;
+
+	if (busqueda == "*") 
+	{
+		todos = 1;
+	}
+
+	for (int i = 0; i < estudiante_index; i++)
+	{
+
+		string estudiante_string = estudiantes[i].apellido_materno + " " + estudiantes[i].apellido_paterno + " " + estudiantes[i].nombre + " " + estudiantes[i].matricula + " " + to_string( estudiantes[i].edad ) + " " + estudiantes[i].correo + " " + estudiantes[i].telefono + " " + estudiantes[i].carrera;
+		estudiante_string = toUpper(estudiante_string);
+		
+		busqueda = toUpper(busqueda);
+
+		cout << "Busqueda: " << busqueda << endl;	
+		
+		if (estudiante_string.find(busqueda) > 0 || todos == 1)
+		{
+			++encontrados;
+			cout << "__________________________________________________________________________________" << endl;
+			cout << "Apellido paterno: " << estudiantes[i].apellido_paterno << endl;
+			cout << "Apellido materno: " << estudiantes[i].apellido_materno << endl;
+			cout << "Nombre:           " << estudiantes[i].nombre << endl;
+		    cout << "Matricula:        " << estudiantes[i].matricula << endl;
+			cout << "Carrera:          " << estudiantes[i].carrera << endl;
+			cout << "Correo:           " << estudiantes[i].correo << endl;
+			cout << "Telefono:         " << estudiantes[i].telefono << endl;
+			cout << "__________________________________________________________________________________" << endl;
+		}
+	}
+
+	cout << "Encontrados: " << encontrados << endl;
+
+	return "Ok.";
+}
+
+
+void RecuperarRegistros() 
+{
+	
+}
 
 
 // Esto lo que se ejecuta primero en cualquier programa de C++
@@ -374,7 +468,9 @@ int main()
 		cout << "  2.- Baja: \n";
 		cout << "  3.- Modificacion: \n";
 		cout << "  4.- Busqueda: \n";
-		cout << "  5.- Salir del sistema: \n";
+		cout << "  5.- Busqueda en lo capturado: \n";
+		cout << "  6.- Leer en memoria registros: \n";
+		cout << "  7.- Salir del sistema: \n";
 		cin >> opcion;
 
 		if (opcion == 1)
@@ -431,7 +527,19 @@ int main()
 
 		}
 
-		if( opcion == 5 )
+		if (opcion == 5)
+		{
+			system("cls");
+			result = busquedaEnLoCapturado();
+
+			if (result != "Ok.")
+			{
+				cout << "Error: " + result << endl;
+			}
+
+		}
+
+		if( opcion == 7 )
 		{
 			return 0;
 		}
