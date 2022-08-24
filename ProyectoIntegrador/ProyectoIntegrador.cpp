@@ -166,7 +166,8 @@ estudiante estudiantes[1024];
 int estudiante_index = 0;
 
 // Esta función inserta los datos del estudiante
-// Usamos como parametro la estructura estudiante
+// Usamos como parámetro la estructura estudiante
+// Dejamos el estudiante, recién agregado dentro de un arreglo
 string insertarEstudiante(estudiante e)
 {
 	string result = SQliteExecute("INSERT INTO estudiantes (apellido_paterno, apellido_materno, nombre, edad, matricula, carrera, correo, telefono) VALUES ('" + 
@@ -244,11 +245,9 @@ string CapturarEstudianteYLoInserta()
 }
 
 
-// Modificamos los datos del estudiante preguntando por su matricula
-// Lo tenemos pendiente para la otra etapa
+// Modificamos los datos del estudiante preguntando por su matrícula
 string ModificacionDeEstudiante()
 {
-	//La matrícula buscada no existe\n
 	estudiante e = estudiante();
 	
 	cout << "Ingrese la matrícula a modificar:";
@@ -268,11 +267,9 @@ string ModificacionDeEstudiante()
 	{
 		return "Ok.";
 	}
-	
-	cout << "El estudiante es: \n" << result << "\n";
 
-	//nlohmann::json j = nlohmann::json::parse(result);
-	//nombre = j[0]["nombre"];	
+	//Le mostramos el usuario para que se ayude a capturar los datos de nuevo
+	cout << "El estudiante es: \n" << result << "\n";
 
 	cout << "Ingrese el nombre del estudiante:";
 	e.nombre = getUserInput();
@@ -289,6 +286,7 @@ string ModificacionDeEstudiante()
 	cout << "Ingrese la carrera:";
 	e.carrera = getUserInput();
 
+	// Salvamos los datos usando una función que toma como parámetro la estructura estudiante
 	return actualizarEstudiante( e );
 }
 
@@ -327,7 +325,9 @@ string BajaDeEstudiante()
 			return "Error: " + result;
 		}
 
-		//Buscamos al estudiante y lo eliminamos 
+		//Buscamos al estudiante y lo eliminamos  del arreglo
+		//Como no podemos eliminar el elemento del arreglo lo 
+		//Cambiamos por una estructura vacía
 		for (int i = 0; i < estudiante_index; i++)
 		{
 			if (estudiantes[i].matricula == matricula)
@@ -393,9 +393,8 @@ string BusquedaDeEstudiante()
 }
 
 
-// Buscamos dentro de lo que hemos capturado en la sessión
+// Buscamos dentro de lo que hemos capturado en la sesión
 string busquedaEnLoCapturado(){
-	// Buscamos los elementos dentro del arreglo es estudiantes
 
 	cout << "Buscar (* --> todos): ";
 	string busqueda = getUserInput();
@@ -499,7 +498,7 @@ string arrayToJson(estudiante estudiantes[], int estudiante_index)
 		j[i]["telefono"] = estudiantes[i].telefono;
 		j[i]["carrera"] = estudiantes[i].carrera;
 	}
-	return j.dump();
+	return j.dump(1);
 }
 
 void SaveToJsonFile() 
@@ -516,6 +515,7 @@ void SaveToJsonFile()
 	
 }
 
+// Recuperamos el arreglo del archivo jSon que previamente salvamos. 
 void RestoreJsonFile() 
 {
 	string result = ReadFile("estudiantes.json");	
@@ -583,9 +583,9 @@ int main()
 		cout << "Seleccione la operación deseada\n";
 		cout << "  1.- Alta: \n";
 		cout << "  2.- Baja: \n";
-		cout << "  3.- Modificacion: \n";
-		cout << "  4.- Busqueda en base de datos: \n";
-		cout << "  5.- Busqueda en memoria: \n";
+		cout << "  3.- Modificación: \n";
+		cout << "  4.- Búsqueda en base de datos: \n";
+		cout << "  5.- Búsqueda en memoria: \n";
 		cout << "  6.- Leer en memoria registros de base de datos: \n";
 		cout << "  7.- Salvar a archivo estudiantes.json: \n";
 		cout << "  8.- Recuperar de archivo estudiantes.json: \n";
