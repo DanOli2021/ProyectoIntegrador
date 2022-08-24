@@ -14,6 +14,7 @@
 using namespace std; std::string;
 
 
+
 //Write string to file
 void WriteFile(string fileName, string text)
 {
@@ -22,6 +23,25 @@ void WriteFile(string fileName, string text)
 	myfile << text << endl;
 	myfile.close();
 }
+
+//Read text file
+string ReadFile(string fileName)
+{
+	ifstream myfile(fileName);
+	string text;
+	string result = "";
+	if (myfile.is_open())
+	{
+		while (getline(myfile, text))
+		{
+			result += text + '\n';
+		}
+		myfile.close();
+	}
+	return result;
+}
+
+
 
 // Capture the user input and return it as a string
 string getUserInput()
@@ -48,6 +68,8 @@ string toString(char* str)
 }
 
 
+
+
 // dbResult to json string
 string dbResultToJson(char** dbResult, int nrows, int ncols)
 {
@@ -57,31 +79,18 @@ string dbResultToJson(char** dbResult, int nrows, int ncols)
 		return "[]";
 	}
 	
-	string json = "[\n";
-	int j = 0;
-	
+	nlohmann::json j;
+
 	for (int n = 0; n < nrows; n++)
 	{
-		json += " {\n";
-
 		for (int i = 0; i < ncols; i++)
 		{
-			json += "  \"" + toString(dbResult[i]) + "\":\"" + toString(dbResult[(ncols * n) + i + ncols]) + "\"";
-
-			if (i < ncols - 1)
-				json += ",\n";
-			else
-				json += "\n";
+			j[n][toString(dbResult[i])] = dbResult[(ncols * n) + i + ncols];
 		}
 
-		if( n < nrows - 1)
-			json += " },\n";
-		else
-			json += " }\n";
 	}
 	
-	json += "]\n";
-	return json;
+	return j.dump(1);
 }
 
 
@@ -128,7 +137,6 @@ string SQliteQuery(string SQL)
 	int result = sqlite3_open("test.db", &db);
 	query_result = sqlite3_get_table(db, SQL.c_str(), &dbResult, &nrows, &ncols, &error);
     sqlite3_close(db);
-
 	
 	if (error != NULL)
 	{
@@ -407,10 +415,9 @@ string busquedaEnLoCapturado(){
 		estudiante_string = toUpper(estudiante_string);
 		
 		busqueda = toUpper(busqueda);
+		int donde_encontro = estudiante_string.find(busqueda);		
 
-		cout << "Busqueda: " << busqueda << endl;	
-		
-		if (estudiante_string.find(busqueda) > 0 || todos == 1)
+		if ((donde_encontro >= 0 && donde_encontro < 10000000) || todos == 1)
 		{
 			++encontrados;
 			cout << "__________________________________________________________________________________" << endl;
@@ -433,6 +440,116 @@ string busquedaEnLoCapturado(){
 
 void RecuperarRegistros() 
 {
+	string result = SQliteQuery("SELECT * FROM estudiantes");
+
+	if (result == "[]")
+	{
+		cout << "No se encontraron datos\n";
+		return;
+	}
+
+	nlohmann::json j;
+		
+	try
+	{	
+		j = nlohmann::json::parse(result);
+	}
+	catch (nlohmann::json::parse_error& ex)
+	{
+		std::cerr << "parse error: " << ex.byte << std::endl;
+		return;
+	}	
+
+	//Limpiamos el array de estudiantes
+	for (auto& a : estudiantes) a = estudiante();
+
+	//Meter los resultados en el arreglo estudiantes
+	for (int i = 0; i < j.size(); i++)
+	{
+		estudiante_index = i;
+		estudiantes[i].apellido_paterno = j[i]["apellido_paterno"];
+		estudiantes[i].apellido_materno = j[i]["apellido_materno"];
+		estudiantes[i].nombre = j[i]["nombre"];
+		estudiantes[i].matricula = j[i]["matricula"];
+		string edad = j[i]["edad"];
+		estudiantes[i].edad = stoi(edad);
+		estudiantes[i].correo = j[i]["correo"];
+		estudiantes[i].telefono = j[i]["telefono"];
+		estudiantes[i].carrera = j[i]["carrera"];
+	}
+
+	cout << "Datos cargados en memoria\n";
+	
+}
+
+
+
+//Convert array of estudiantes to json
+string arrayToJson(estudiante estudiantes[], int estudiante_index)
+{
+	nlohmann::json j;
+	for (int i = 0; i < estudiante_index; i++)
+	{
+		j[i]["apellido_paterno"] = estudiantes[i].apellido_paterno;
+		j[i]["apellido_materno"] = estudiantes[i].apellido_materno;
+		j[i]["nombre"] = estudiantes[i].nombre;
+		j[i]["matricula"] = estudiantes[i].matricula;
+		j[i]["edad"] = estudiantes[i].edad;
+		j[i]["correo"] = estudiantes[i].correo;
+		j[i]["telefono"] = estudiantes[i].telefono;
+		j[i]["carrera"] = estudiantes[i].carrera;
+	}
+	return j.dump();
+}
+
+void SaveToJsonFile() 
+{
+
+	remove("estudiantes.json");
+	string result = "";
+	auto arr = nlohmann::json::array();
+	
+	result = result + arrayToJson(estudiantes, estudiante_index);
+	
+	WriteFile("estudiantes.json", result);
+	cout << stderr << "\nArchivo estudiantes.json creado" << endl;
+	
+}
+
+void RestoreJsonFile() 
+{
+	string result = ReadFile("estudiantes.json");	
+
+	nlohmann::json j;
+
+	try
+	{
+		j = nlohmann::json::parse(result);
+	}
+	catch (nlohmann::json::parse_error& ex)
+	{
+		std::cerr << "parse error: " << ex.byte << std::endl;
+		return;
+	}
+
+	//Limpiamos el array de estudiantes
+	for (auto& a : estudiantes) a = estudiante();
+
+	//Meter los resultados en el arreglo estudiantes
+	for (int i = 0; i < j.size(); i++)
+	{
+		estudiante_index = i;
+		estudiantes[i].apellido_paterno = j[i]["apellido_paterno"];
+		estudiantes[i].apellido_materno = j[i]["apellido_materno"];
+		estudiantes[i].nombre = j[i]["nombre"];
+		estudiantes[i].matricula = j[i]["matricula"];		
+		estudiantes[i].edad = j[i]["edad"];;
+		estudiantes[i].correo = j[i]["correo"];
+		estudiantes[i].telefono = j[i]["telefono"];
+		estudiantes[i].carrera = j[i]["carrera"];
+	}
+
+	cout << "Datos cargados en memoria\n";
 	
 }
 
@@ -467,10 +584,12 @@ int main()
 		cout << "  1.- Alta: \n";
 		cout << "  2.- Baja: \n";
 		cout << "  3.- Modificacion: \n";
-		cout << "  4.- Busqueda: \n";
-		cout << "  5.- Busqueda en lo capturado: \n";
-		cout << "  6.- Leer en memoria registros: \n";
-		cout << "  7.- Salir del sistema: \n";
+		cout << "  4.- Busqueda en base de datos: \n";
+		cout << "  5.- Busqueda en memoria: \n";
+		cout << "  6.- Leer en memoria registros de base de datos: \n";
+		cout << "  7.- Salvar a archivo estudiantes.json: \n";
+		cout << "  8.- Recuperar de archivo estudiantes.json: \n";
+		cout << "  9.- Salir del sistema: \n";
 		cin >> opcion;
 
 		if (opcion == 1)
@@ -539,7 +658,22 @@ int main()
 
 		}
 
-		if( opcion == 7 )
+		if (opcion == 6)
+		{
+			RecuperarRegistros();
+		}
+
+		if (opcion == 7)
+		{
+			SaveToJsonFile();
+		}
+
+		if (opcion == 8)
+		{
+			RestoreJsonFile();
+		}
+
+		if( opcion == 9 )
 		{
 			return 0;
 		}
